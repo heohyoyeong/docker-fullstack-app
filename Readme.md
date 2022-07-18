@@ -161,3 +161,26 @@
         }
     }
 ~~~
+
+
+## 4. Node app을 위한 backend 도커파일 작성
+<hr/>
+
+- backend에서 사용할 도커파일들을 작성해주어야한다.
+- 개발용 Dockerfile.dev과 운영을 위한 Dockerfile을 작성해야한다.
+- Dockerfile은 평범하지만 Dockerfile.dev는 조금 다르다.
+~~~
+    FROM node:alpine
+
+    WORKDIR /app
+
+    COPY ./package.json ./
+
+    RUN npm install
+
+    COPY . .
+    
+    // package.json에서  코드가 변경될 때 바로 반영해주는 nodemon이라는 모듈을 사용해기 위하여 dev로 사용
+    // package.json => "dev": "nodemon server.js"
+    CMD ["npm","run","dev"]
+~~~
