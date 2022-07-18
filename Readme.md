@@ -102,4 +102,25 @@
 
 ## 2. React.js 코드작성
 <hr/>
-- 
+
+- terminal에서 "npx create-react-app frontend" 라는 명령어를 작성하면 자동으로 frontend라는 폴더가 생성되고 react-app이 설치된다.
+- frontend/src/App.js와 frontend/src/App.css 를 내가 원하는 방식으로 수정 (코드 복사해옴)
+- 그 이후 npm run start를 실행하면 작동하면 실행이 되나 코드 변경시 반영이 되지 않음 (원도우에서만 이러는 것으로 파악)
+- 위의 문제는 frontend/package.json에서 수정하면 가능 (https://stackoverflow.com/questions/71297042/react-hot-reload-doesnt-work-in-docker-container 참조)
+
+~~~json
+기존 코드에서
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  }
+   
+  "scripts": {
+    "start": "WATCHPACK_POLLING=true react-scripts start", <= 이부분을 수정하면 리엑트 핫로드 수행가능
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+~~~
