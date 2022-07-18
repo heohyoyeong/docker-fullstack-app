@@ -124,3 +124,40 @@
     "eject": "react-scripts eject"
   },
 ~~~
+
+
+
+## 3. React app을 위한 frontend 도커파일 작성
+<hr/>
+
+- frontend에서 사용할 도커파일들을 작성해주어야한다.
+- 개발용 Dockerfile.dev과 운영을 위한 Dockerfile을 작성해야한다.
+- Dockerfile은 평범하지만 Dockerfile.dev는 조금 다르다.
+~~~
+    FROM nginx
+    EXPOSE 3000
+
+    // 이게 밑에있는 nginx의 설정파일의 위치이며 COPY를 통해 기본파일을 우리가 작성한것으로 덮어쓰기하는것
+    COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf 
+
+    // build 파일들을 nginx가 가리키고 있는 경로로 보내라!
+    COPY --from=builder /app/build /usr/share/nginx/html
+~~~
+
+- frontend에서 사용할 nginx에 대한 설정
+~~~
+    nginx의 default conf 설명
+    server{
+
+        listen 3000; => nginx 서버가 3000번 포트를 받기때문에 작성
+
+        location / <= location/로 갈때 작동한다!
+
+            root /usr/share/nginx/html;  => HTML 파일이 위치할 루트 설정 (Nginx가 생성한 Build 파일들의 위치)
+            
+            index index.html index.htm;  => 사이트의 index 페이지로 할 파일명 설정
+ 
+            try_files $uri #uri/ /index.html; => React Router를 사용해서 페이지간 이동을 할 떄 이 부분이 필요 (이 부분이 없으면 페이지 이동이 불가능)
+        }
+    }
+~~~
