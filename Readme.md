@@ -234,3 +234,47 @@
 <hr/>
 
 - nginx이라는 폴더를 root 디렉토리에 생성후 Dockerfile과 default.conf을 생성
+- 개발용 Dockerfile.dev와 배포용 Dockerfile를 따로 제작해야하지만 이 섹션의 경우 2개가 같아 하나로 통일
+
+- default.conf 설정파일 부터 작성
+~~~
+    upstream frontend {
+        server frontend:3000;  <= 3000 포트에서 frontend가 돌아가는 것을 명시
+    }
+
+    upstream backend {
+        server backend:5000;   <= 5000 포트에서 backend가 돌아가는 것을 명시
+    }
+
+    server {
+        listen 80; <= Nginx 서버 포트 80번을 열어주고 
+
+        location / {
+            proxy_pass http://frontend;  <= /로 끝나면 frontend로 보낸다는 의미이며 /api 보다 후순위 입니다.
+        }
+
+        location /api {
+            proxy_pass http://backend; <= /api로 끝나면 backend로 보낸다는 의미
+        }
+
+        location /sockjs-node {  <= 이부분이 없다면 개발 환경에서 에러가 발생한다고 합니다.
+            proxy_pass http://frontend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "Upgrade";
+        }
+
+    }
+~~~
+
+
+- Nginx를 구동하기 위한 Dockerfile을 생성
+
+~~~
+    // nginx 베이스 이미지를 가져와서 생성
+    FROM nginx
+
+    // 추후 생성할 my.cnf 파일을 지금 작성할 my.cnf파일로 덮어쓰기 
+    COPY ./default.conf  /etc/nginx/conf.d/default.conf
+
+~~~
