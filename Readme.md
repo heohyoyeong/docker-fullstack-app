@@ -184,3 +184,53 @@
     // package.json => "dev": "nodemon server.js"
     CMD ["npm","run","dev"]
 ~~~
+
+
+## 5. mysql을 위한 도커파일 작성
+<hr/>
+
+- mysql이라는 폴더를 root 디렉토리에 생성후 Dockerfile을 생성
+
+~~~
+    // mysql 이미지를 가져와서 생성
+    FROM mysql:5.7 
+
+    // 추후 생성할 my.cnf 파일을 지금 작성할 my.cnf파일로 덮어쓰기 
+    ADD ./my.cnf /etc/mysql/conf.d/my.cnf
+~~~
+
+
+- 그이후 my.cnf 파일 을 생성, 기본 my.cnf의 경우 라틴어로 설정되어있어 한국어를 사용할 경우 깨는 현상발생
+- 이러한 현상을 방지하기 위하여 utf8로 샛팅을 변경해주어야 함
+
+~~~
+    [mysqld]
+    character-set-server=utf8
+
+    [mysql]
+    default-character-set=utf8
+
+    [client]
+    default-character-set=utf8
+~~~
+
+- 그이후 mysql 내부에 sqls 폴더를 생성한 후 생성한 폴더에 initialize.sql 이라는 DATABASE와 TABLE을 작성
+
+~~~
+    DROP DATABASE IF EXISTS myapp; <= 기존에 DATABASE가 있다면 myapp을 드랍하라
+
+    CREATE DATABASE myapp; <= myapp이라는 DATABASE가 생성
+    USE myapp; <= myapp이라는 DATABASE를 사용
+
+    CREATE TABLE lists ( <= myapp이라는 DATABASE 내부에 lists라는 TABLE을 생성하는데
+        id INTEGER AUTO_INCREMENT, <= id는 int 타입에 1씩 증가하며
+        value TEXT, <= 값은 text 이고 
+        PRIMARY KEY (id) <= PRIMARY KEY는 id이다.
+    );
+~~~
+
+
+## 6. NGINX를 위한 도커파일 작성 (연결 주소에 따라 fronted와 backend를 구분해줄수있는 기능)
+<hr/>
+
+- nginx이라는 폴더를 root 디렉토리에 생성후 Dockerfile과 default.conf을 생성
