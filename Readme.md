@@ -278,3 +278,57 @@
     COPY ./default.conf  /etc/nginx/conf.d/default.conf
 
 ~~~
+
+
+## 7. Docker-compose를 사용하기 위한 Docker-compose.yml 파일 작성
+<hr/>
+
+- Docker-compose.yml를 작성하여 제작할 Container에 대하여 dockerfile과 설정에 대한 명시 수행
+- Docker-compose.yml를 작성한 후 Docker-compose up 명령어를 사용하면 localhost:3000에서 react-app이 켜지지만 아무리 입력을 진행해도 data가 뜨지 않을 것이다.
+- 그 이유는 mysql에 대하여 명시를 해주었지만 정상 mysql의 설치를 진행하지 않았기 때문! 
+
+~~~
+    version: "3"
+    services:
+        frontend:
+            build:
+                dockerfile: Dockerfile.dev
+                context: ./frontend
+            volumes:
+                - /app/node_modules
+                - ./frontend:/app
+            stdin_open: true
+
+    nginx: 
+        restart: always
+        build:
+            dockerfile: Dockerfile
+            context: ./nginx
+        ports: 
+            - "3000:80"
+
+    backend:
+        build: 
+            dockerfile: Dockerfile.dev
+            context: ./backend
+        container_name: app_backend
+        volumes:
+            - /app/node_modules
+            - ./backend:/app
+
+    mysql:
+        build: ./mysql
+        restart: unless-stopped
+        container_name: app_mysql
+        ports: 
+            - "3308:3306"
+        volumes:
+            - ./mysql/mysql_data:/var/lib/mysql
+            - ./mysql/sqls/:/docker-entrypoint-initdb.d/
+        environment: 
+            MYSQL_ROOT_PASSWORD: 1q2w3e4r!!
+            MYSQL_DATABASE: myapp
+~~~
+
+- mysql 설치에 관한 블로그 "https://devdhjo.github.io/mysql/2020/01/28/database-mysql-001.html" 를 참조하여 mysql을 설치 
+- 또한 "[error] --initialize specified but the data directory has files in it."이러한 에러가 뜬다면 "https://stackoverflow.com/questions/37644118/initializing-mysql-directory-error" 사이트를 확인
