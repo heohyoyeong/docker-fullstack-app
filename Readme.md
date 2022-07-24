@@ -332,3 +332,32 @@
 
 - mysql 설치에 관한 블로그 "https://devdhjo.github.io/mysql/2020/01/28/database-mysql-001.html" 를 참조하여 mysql을 설치 
 - 또한 "[error] --initialize specified but the data directory has files in it."이러한 에러가 뜬다면 "https://stackoverflow.com/questions/37644118/initializing-mysql-directory-error" 사이트를 확인
+
+
+
+
+## 8. AWS에서 도커를 작동시키기 위한 MYSQL관련 부분 정리 작업
+<hr/>
+
+- 7까지는 Mysql을 내부 서버에서 작동시켰다면 이제는 AWS에서 작동시키기 위한 코드를 수정해 주어야한다.
+
+~~~
+    Docker-compose.yml 파일의 이 부분을 전부 주석처리 진행
+
+    # mysql:
+    #     build: ./mysql
+    #     restart: unless-stopped
+    #     container_name: app_mysql
+    #     ports: 
+    #         - "3308:3306"
+    #     volumes:
+    #         - ./mysql/mysql_data:/var/lib/mysql
+    #         - ./mysql/sqls/:/docker-entrypoint-initdb.d/
+    #     environment: 
+    #     MYSQL_ROOT_PASSWORD: 1q2w3e4r!!
+    #     MYSQL_DATABASE: myapp
+
+    이렇게 주석처리 수행
+~~~
+
+- 또한 추후 aws에서 db생성후 작성할 내용을 backend의 db.js에 기입해줄것이다 . (추후 진행) 
