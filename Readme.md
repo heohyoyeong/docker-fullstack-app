@@ -376,39 +376,80 @@
         - docker  <= docker로 서비스를 한다
 
     before_install:
-        // smileajw1004/react-test-app라는 이름으로 빌드를 할것이다
+        // heohyoyeong/react-test-app라는 이름으로 빌드를 할것이다
         // 빌드할 도커 파일은 ./frontend/Dockerfile.dev 이다.
         // 또한 이것의 위치는  ./frontend 입니다.
-        - docker build -t smileajw1004/react-test-app -f ./frontend/Dockerfile.dev ./frontend  
+        - docker build -t heohyoyeong/react-test-app -f ./frontend/Dockerfile.dev ./frontend  
 
     script:
         // install 후에 -e 명령어로 CI=true라는 설정을 한후 <= CI=true는 travis CI에서 사용하기 위한 설정 (이게 없으면 오류 발생)
-        // smileajw1004/react-test-app라는 Container로 npm test를 진행한다. 
-        - docker run -e CI=true smileajw1004/react-test-app npm test
+        // heohyoyeong/react-test-app라는 Container로 npm test를 진행한다. 
+        - docker run -e CI=true heohyoyeong/react-test-app npm test
 
     after_success:
-        - docker build -t smileajw1004/docker-frontend ./frontend <= 각각의 이미지를 build 한다.
-        - docker build -t smileajw1004/docker-backend ./backend
-        - docker build -t smileajw1004/docker-nginx ./nginx
+        - docker build -t heohyoyeong/docker-frontend ./frontend <= 각각의 이미지를 build 한다.
+        - docker build -t heohyoyeong/docker-backend ./backend
+        - docker build -t heohyoyeong/docker-nginx ./nginx
         
         // travis ci에서 업로드된 repo를 찾아간후 setting의 more option 클릭
         // 그이후 environment variables에 도커 허브 아이디와 비밀번호를 입력
         - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_ID" --password-stdin <= 도커 허브에 로그인
 
-        - docker push smileajw1004/docker-frontend <= 빌드된 이미지를 도커 허브에 push
-        - docker push smileajw1004/docker-backend
-        - docker push smileajw1004/docker-nginx
+        - docker push heohyoyeong/docker-frontend <= 빌드된 이미지를 도커 허브에 push
+        - docker push heohyoyeong/docker-backend
+        - docker push heohyoyeong/docker-nginx
+~~~
 
-    deploy:
-        provider: elasticbeanstalk
-        region: "ap-northeast-2"
-        app: "docker-fullstack-app"
-        env: "DockerFullstackApp-env"
-        bucket_name: elasticbeanstalk-ap-northeast-2-972153559337
-        bucket_path: "docker-fullstack-app"
-        on:
-            branch: master
-        
-        access_key_id: $AWS_ACCESS_KEY
-        secret_access_key: $AWS_SECRET_ACCESS_KEY
+
+
+## 10. 다중 컨터에너를 aws에 배포하기위한 Dockerrun.aws.json 작성
+<hr/>
+
+- Dockerrun.aws.json파일은 Docker 컨테이너 세트를 AWS의 Elastic beanstalk 어플리케이션으로 배포하는 방법을 설명하는 파일
+- Dockerrun.aws.json파일을 사용하면 멀티 컨테이너 Docker 환경을 사용할 수 있습니다.
+
+~~~json
+    // 변수의 의미부터 설명 
+    // name  : 컨테이너의 이름
+    // image : Docker 컨테이너를 구축할 온라인 Docker 레포의 이미지명
+    // hostname : 호스트 이름으로 이 이름을 사용하여 도커 컴포즈를 이용해 생성된 다른 컨테이너를 접근 가능
+    // essenstial : true로 할 경우, 컨테이너가 실패하면 작업을 중지합니다. 
+    //              필수적이지 않은 컨테이너는 인스턴스의 나머지 컨테이너에 영향을 미치지않고 종료되거나 충돌 할 수 있다.
+    // memory : 컨테이너 용으로 예약할 인스턴스의 메모리양. 
+    //          컨테이너 정의에서 memory 또는 memoryReservation 파라미터중 하나 또는 모드 0이 아닌 정수로 지정하면 됨
+    // portMappings : 컨테이너에 있는 네트워크 지점을 호스트에 있는 지점에 매핑
+    // links : 연결한 컨테이너의 목록. 연결된 컨테이너는 서로를 검색하고 통신 가능
+
+
+    "AWSEBDockerrunVersion": 2,
+    "containerDefinitions": [
+        {
+            "name": "frontend",
+            "image": "heohyoyeong/docker-frontend",
+            "hostname": "frontend",
+            "essential": false,
+            "memory": 128
+        },
+        {
+            "name": "backend",
+            "image": "heohyoyeong/docker-backend",
+            "hostname": "backend",
+            "essential": false,
+            "memory": 128
+        },
+        {
+            "name": "nginx",
+            "image": "heohyoyeong/docker-nginx",
+            "hostname": "nginx",
+            "essential": true,
+            "portMappings": [
+                {
+                    "hostPort": 80,
+                    "containerPort": 80
+                }
+            ],
+            "links": ["frontend", "backend"],
+            "memory": 128
+        }
+    ]
 ~~~
