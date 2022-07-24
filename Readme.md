@@ -360,4 +360,55 @@
     이렇게 주석처리 수행
 ~~~
 
-- 또한 추후 aws에서 db생성후 작성할 내용을 backend의 db.js에 기입해줄것이다 . (추후 진행) 
+- 또한 추후 aws에서 db생성후 작성할 내용을 backend의 db.js에 기입해줄것이다 . (추후 진행 예정) 
+
+## 9. Travis CI 를 사용하기 위한 .travis.yml 파일 작성하기
+<hr/>
+
+- 7까지는 Mysql을 내부 서버에서 작동시켰다면 이제는 AWS에서 작동시키기 위한 코드를 수정해 주어야한다.
+
+~~~
+    language: generic <= 언어는 genenric으로 한다 
+
+    sudo: required <= sudo 권한이 필요하다
+
+    services:
+        - docker  <= docker로 서비스를 한다
+
+    before_install:
+        // smileajw1004/react-test-app라는 이름으로 빌드를 할것이다
+        // 빌드할 도커 파일은 ./frontend/Dockerfile.dev 이다.
+        // 또한 이것의 위치는  ./frontend 입니다.
+        - docker build -t smileajw1004/react-test-app -f ./frontend/Dockerfile.dev ./frontend  
+
+    script:
+        // install 후에 -e 명령어로 CI=true라는 설정을 한후 <= CI=true는 travis CI에서 사용하기 위한 설정 (이게 없으면 오류 발생)
+        // smileajw1004/react-test-app라는 Container로 npm test를 진행한다. 
+        - docker run -e CI=true smileajw1004/react-test-app npm test
+
+    after_success:
+        - docker build -t smileajw1004/docker-frontend ./frontend <= 각각의 이미지를 build 한다.
+        - docker build -t smileajw1004/docker-backend ./backend
+        - docker build -t smileajw1004/docker-nginx ./nginx
+        
+        // travis ci에서 업로드된 repo를 찾아간후 setting의 more option 클릭
+        // 그이후 environment variables에 도커 허브 아이디와 비밀번호를 입력
+        - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_ID" --password-stdin <= 도커 허브에 로그인
+
+        - docker push smileajw1004/docker-frontend <= 빌드된 이미지를 도커 허브에 push
+        - docker push smileajw1004/docker-backend
+        - docker push smileajw1004/docker-nginx
+
+    deploy:
+        provider: elasticbeanstalk
+        region: "ap-northeast-2"
+        app: "docker-fullstack-app"
+        env: "DockerFullstackApp-env"
+        bucket_name: elasticbeanstalk-ap-northeast-2-972153559337
+        bucket_path: "docker-fullstack-app"
+        on:
+            branch: master
+        
+        access_key_id: $AWS_ACCESS_KEY
+        secret_access_key: $AWS_SECRET_ACCESS_KEY
+~~~
