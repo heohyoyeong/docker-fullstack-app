@@ -453,3 +453,125 @@
         }
     ]
 ~~~
+
+
+
+## 12. AWS 진행
+<hr/>
+
+- 가장먼저 아마존 AWS Elastic beanstalk에서 새 환경 생성을 통해 환경 생성
+- 환경 이름을 작성 후 플랫폼을 Docker running on 64bit Amazon Linux 2를 선택하여 Elastic beanstalk 생성 진행
+
+<img src="awsimg/elastic beanstalk.PNG">
+
+<hr/>
+
+- MYSQL을 위한 AWS RDS를 생성해 줄 것입니다.
+- 이를 위해 Docker-compose.yml 파일과 backend의 db.js 수정할 것 입니다.
+
+Docker-compose.yml 파일 수정
+~~~
+    DB와 
+    backend:
+        build: 
+            dockerfile: Dockerfile.dev
+            context: ./backend
+        container_name: app_backend
+        volumes:
+            - /app/node_modules
+            - ./backend:/app 
+        // 기존에는 volumes 까지만 작성하였지만 아래의 환경을 추가로 작성 진행
+        environment: 
+            MYSQL_HOST: mysql
+            MYSQL_USER: root 
+            MYSQL_ROOT_PASSWORD: heohyoyeong1993
+            MYSQL_DATABASE: myapp
+            MYSQL_PORT: 3306   
+~~~
+
+db.js 파일 수정
+~~~
+    db.js의 경우 기존에는 host와 USER등을 명시하여 작성하였습니다.
+    
+    const mysql = require("mysql");
+    const pool = mysql.createPool({
+        connectionLimit: 10,
+        host: 'mysql',
+        user: 'root',
+        password: '1q2w3e4r!!',
+        database: 'myapp'
+    });
+    exports.pool = pool;
+    
+    이제는 Docker-compose로부터 정보를 받아오도록 host와 user 등을 변경합니다.
+
+    const mysql = require("mysql");
+    const pool = mysql.createPool({
+        connectionLimit: 10,
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_ROOT_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+        port: process.env.MYSQL_PORT
+    });
+    exports.pool = pool;
+~~~
+
+- 그이후 AWS RDW 데이터 베이스를 생성합니다.
+- 엔진 옵션은 MYSQL 이고 템플릿은 프리티어로 작성합니다.
+
+사전에 Docker-compose에서 user,password,database를 설정해 주었기 때문에 해당 내용을 RDW에 명시해주어야합니다.
+
+<img src="awsimg/RDW1.PNG">
+<img src="awsimg/RDW2.PNG">
+
+<hr/>
+
+- 이제 Security Group을 생성해주기 위하여 AWS의 VPC로 들어갑니다.
+- VPC의 보안그룹을 클릭한 후 적당한 이름을 작성후 생성합니다.
+- 그 이후 인바운드 규칙 편집을 클릭 후 규칙 추가를 클릭합니다.
+
+<img src="awsimg/VPC.PNG">
+
+- 이제 생성한 Security Group을 이전에 제작한 RDS의 데이터베이스에 적용해볼것입니다.
+- 이전에 작성하였던 데이터 베이스를 들어간 후 수정버튼을 클릭합니다.
+- 그 이후 보안 그룹 생성한 Security Group을 클릭하고 계속버튼을 클릭한후 즉시적용하여 데이터 베이스를 수정합니다.
+
+- 이번에는 생성한 Security Group을 이전에 제작한 elastic beanstalk에 적용해볼것입니다.
+- 이전에 작성하였던 elastic beanstalk에 들어간 후 왼쪽의 구성버튼을 클릭합니다.
+- 그 이후 인스턴스의 편집을 누른후 인스턴스 보안 그룹을 작성한 Security Group를 추가한후 확인하면 됩니다.
+
+<hr/>
+
+
+- 이번에는 elastic beanstalk과 RDS 소통을 위한 환경변수를 설정할 것 입니다.
+- 가장 먼저 이전에 생성하였던 RDS에 접근하여 Host를 복사합니다. 
+
+<img src="awsimg/RDS HOST.PNG">
+
+- RDW에 접근하여 Host가 무었인지 확인합니다.
+- 이전에 작성하였던 elastic beanstalk의 구성에서 인스턴스 편집으로 들어갑니다.
+- 그 이후 환경 속성에서 이전에 Docker-compose.yml 파일에 작성하였던 내용을 기입합니다.
+
+<img src="awsimg/ELASTICRDS.PNG">
+
+
+## 13. 배포를 위한 .travis.yml 수정
+<hr/>
+
+- 이제 배포를 위해서 .travis.yml 파일을 수정해 줄 것입니다.
+
+~~~
+    deploy:
+        provider: elasticbeanstalk  <= elasticbeanstalk으로 실행
+        region: "us-west-2"  <= elasticbeanstalk의 물리적 주소 
+        app: "docker-fullstack-app" <= elasticbeanstalk의 생성한 이름
+        env: "Dockerfullstackapp-env" <= elasticbeanstalk의 환경명으로 elasticbeanstalk에 들어가면 나오는 큰 이름
+        bucket_name: elasticbeanstalk-us-west-2-665683613775 <= AWS의 S3에 접속하면 생성한 elasticbeanstalk에 관련된 것의 복사해오면됨
+        bucket_path: "docker-fullstack-app"
+        on:
+            branch: master <= master branch에 push가 될 때마다 최신화 하겟다.
+        
+        access_key_id: $AWS_ACCESS_KEY   <= 아무나 접속할 수 없기 때문에 id와 Password를 걸것이고 이것으로 travis ci 와 연동을 합니다.
+        secret_access_key: $AWS_SECRET_ACCESS_KEY
+~~~

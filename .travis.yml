@@ -22,15 +22,15 @@ after_success:
   - docker push heohyoyeong/docker-backend
   - docker push heohyoyeong/docker-nginx
 
-# deploy:
-#   provider: elasticbeanstalk
-#   region: "ap-northeast-2"
-#   app: "docker-fullstack-app"
-#   env: "DockerFullstackApp-env"
-#   bucket_name: elasticbeanstalk-ap-northeast-2-972153559337
-#   bucket_path: "docker-fullstack-app"
-#   on:
-#     branch: master
+deploy:
+  provider: elasticbeanstalk
+  region: "us-west-2"
+  app: "docker-fullstack-app"
+  env: "Dockerfullstackapp-env"
+  bucket_name: elasticbeanstalk-us-west-2-665683613775
+  bucket_path: "docker-fullstack-app"
+  on:
+    branch: master
   
-#   access_key_id: $AWS_ACCESS_KEY
-#   secret_access_key: $AWS_SECRET_ACCESS_KEY
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
