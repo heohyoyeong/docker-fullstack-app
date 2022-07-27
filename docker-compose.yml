@@ -1,6 +1,7 @@
 version: "3"
 services:
   frontend:
+    image: "heohyoyeong/docker-frontend"
     build:
       dockerfile: Dockerfile.dev
       context: ./frontend
@@ -8,16 +9,21 @@ services:
       - /app/node_modules
       - ./frontend:/app
     stdin_open: true
+    mem_litit: 128m
 
   nginx: 
+    image: "heohyoyeong/docker-nginx"
     restart: always
     build:
       dockerfile: Dockerfile
       context: ./nginx
     ports: 
       - "3000:80"
+    mem_litit: 128m
+
 
   backend:
+    image: "heohyoyeong/docker-backend"
     build: 
       dockerfile: Dockerfile.dev
       context: ./backend
@@ -26,12 +32,12 @@ services:
       - /app/node_modules
       - ./backend:/app
     environment: 
-      MYSQL_HOST: mysql
+      MYSQL_HOST: docker-fullstack-mysql.cqxxqploz0kp.us-west-2.rds.amazonaws.com
       MYSQL_USER: root 
       MYSQL_ROOT_PASSWORD: heohyoyeong1993
       MYSQL_DATABASE: myapp
       MYSQL_PORT: 3306   
-
+    mem_litit: 128m
   # mysql:
   #   build: ./mysql
   #   restart: unless-stopped
