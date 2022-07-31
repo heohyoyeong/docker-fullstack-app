@@ -1,4 +1,4 @@
-version: "3"
+version: "2.4"
 services:
   frontend:
     image: "heohyoyeong/docker-frontend"
@@ -9,7 +9,6 @@ services:
       - /app/node_modules
       - ./frontend:/app
     stdin_open: true
-    mem_litit: 128m
 
   nginx: 
     image: "heohyoyeong/docker-nginx"
@@ -19,10 +18,9 @@ services:
     #   context: ./nginx
     ports: 
       - "80:80"
-    link:
+    links:
       - frontend
       - backend
-    mem_litit: 128m
 
 
   backend:
@@ -40,7 +38,6 @@ services:
       MYSQL_ROOT_PASSWORD: heohyoyeong1993
       MYSQL_DATABASE: myapp
       MYSQL_PORT: 3306   
-    mem_litit: 128m
   # mysql:
   #   build: ./mysql
   #   restart: unless-stopped
