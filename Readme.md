@@ -575,3 +575,83 @@ db.js 파일 수정
         access_key_id: $AWS_ACCESS_KEY   <= 아무나 접속할 수 없기 때문에 id와 Password를 걸것이고 이것으로 travis ci 와 연동을 합니다.
         secret_access_key: $AWS_SECRET_ACCESS_KEY
 ~~~
+
+
+## 14. AWS 배포를 과정속에서 발생한 에러 해결
+<hr/>
+
+- 위에 적힌대로 aws에 배포를 수행하였지만! 아래와 같은 error가 출력되면서 배포를 실패할 것입니다.
+~~~
+    AWS 배포시 에러 "Environment health has transitioned from Info to Degraded. Command failed on all instances. Incorrect application version found on all instances.
+    Expected version "Sample Application" (deployment 3)" 
+~~~
+
+- 이를 해결하기 위해서 몇가지를 변경해보겠습니다.
+
+1. nginx폴더의 Docker file 수정
+
+~~~
+    FROM nginx
+    EXPOSE 80 <= 이부분이 추가된 부분입니다. 80번 포트라는 것을 명시!
+    COPY ./default.conf  /etc/nginx/conf.d/default.conf
+~~~
+
+2. frontend의 Dockerfile & Dockerfile.dev 수정
+
+~~~
+    Dockerfile 의 경우
+    FROM node:16-alpine as builder 로 변경
+
+
+    Dockerfile.dev 의 경우
+    FROM node:16-alpine 로 변경
+~~~
+
+- 위에 2가지를 수정해도 사실 에러가 해결되지 않았다!
+- AWS가 업데이트 되어 Dockerrun.aws.json 대신에 docker-compose.yml을 이용하도록 변경되었습니다.
+- 이러한 변화를 반영하도록 알고리즘 수정이 필요합니다
+
+3. Dockerrun.aws.json 삭제 및 docker-compose.yml 파일 수정
+~~~
+    version: "2.4" <= 3버전에서 2.4 버전으로 변경 
+    services:
+    frontend:
+        image: "heohyoyeong/docker-frontend" <=도커 이미지를 도커 허브에서 가져오기 위하여 허브에 저장된 이미지 명시
+        volumes:
+            - /app/node_modules
+            - ./frontend:/app
+        stdin_open: true
+         mem_limit : 128m 
+
+    nginx: 
+        image: "heohyoyeong/docker-nginx" <=도커 이미지를 도커 허브에서 가져오기 위하여 허브에 저장된 이미지 명시
+        restart: always
+        ports: 
+            - "80:80" <=  nginx는 기본적으로 80번 포트를 사용하기때문에 80:80 으로 변경
+        links:
+            - frontend
+            - backend
+        mem_limit : 128m 
+
+    backend:
+        image: "heohyoyeong/docker-backend" <=도커 이미지를 도커 허브에서 가져오기 위하여 허브에 저장된 이미지 명시
+        container_name: app_backend
+        volumes:
+            - /app/node_modules
+            - ./backend:/app
+        environment: 
+            MYSQL_HOST: docker-fullstack-mysql.cqxxqploz0kp.us-west-2.rds.amazonaws.com <= AWS의 Mysql host 정보를 RDS 서브스 페이즈에서 가져와 넣어주어야합니다.
+            MYSQL_USER: root 
+            MYSQL_ROOT_PASSWORD: heohyoyeong1993
+            MYSQL_DATABASE: myapp
+            MYSQL_PORT: 3306   
+    mem_limit : 128m 
+~~~
+
+## 최종 결과 
+<hr/>
+
+- 아래와 같이 정상적으로 reactapp을 aws를 사용하여 배포하는 것으 성공하였습니다!
+- 그리고 몇일후 6800원이 결제되었습니다.. 
+- 에러를 해결하고 test하느라 너무 접속을 많이했나봅니다. 다들 조심하시길바랍니다.
+<img src="awsimg/final.PNG">
